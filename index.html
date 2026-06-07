@@ -882,30 +882,33 @@ function renderPixelArt(cig) {
     return;
   }
 
-  const pixelSize = 2;
+  const pixelSize = 3;
   const rows = grid.length;
   const cols = grid[0].length;
-  const displayScale = 3;
+  const w = cols * pixelSize;
+  const h = rows * pixelSize;
 
-  let shadows = [];
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.style.display = 'block';
+  canvas.style.margin = '0 auto';
+  canvas.style.imageRendering = 'pixelated';
+
+  const ctx = canvas.getContext('2d');
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       if (grid[y][x] !== null) {
-        shadows.push(`${x * pixelSize}px ${y * pixelSize}px 0 ${grid[y][x]}`);
+        ctx.fillStyle = grid[y][x];
+        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
       }
     }
   }
 
-  box.innerHTML = `
-    <div style="
-      width:${pixelSize}px;height:${pixelSize}px;
-      box-shadow:${shadows.join(',')};
-      margin:8px;
-      transform:scale(${displayScale});
-      transform-origin:top center;
-    "></div>
-    <div style="height:${rows * pixelSize * displayScale - rows * pixelSize}px;"></div>
-  `;
+  box.innerHTML = '';
+  box.appendChild(canvas);
 }
 
 // ============ 步骤切换 ============
