@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>香烟性格测试</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: #faf8f5;
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #app {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .step { transition: opacity 0.3s ease; }
+  .cig-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .cig-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .option-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .option-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #e8e4dc; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Step 1 -->
+  <div id="step-select" class="step" style="opacity:1;">
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-3">🚬</div>
+      <h1 class="text-xl font-bold tracking-wider" style="color:#3a3a3a;">香烟性格测试</h1>
+      <p class="text-xs mt-2" style="color:#b0a89a;">选一根你最常抽的烟，看看它暴露了你什么</p>
+    </div>
+    <div class="mb-4 relative">
+      <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2" style="color:#c4b998;z-index:1;"></i>
+      <input id="searchInput" type="text" placeholder="搜索香烟品牌..." oninput="filterCigarettes()"
+        class="w-full pl-10 pr-4 py-3 rounded-lg border text-sm outline-none transition-colors"
+        style="background:#fff;border-color:#e8e4dc;color:#3a3a3a;">
+    </div>
+    <div class="flex gap-2 mb-4 flex-wrap" id="priceTags">
+      <button onclick="filterByPrice('all')" class="px-3 py-1 rounded-full text-xs font-medium border price-tag active" data-price="all" style="border-color:#cc4444;color:#cc4444;background:#fef5f5;">全部</button>
+      <button onclick="filterByPrice('low')" class="px-3 py-1 rounded-full text-xs border price-tag" data-price="low" style="border-color:#e8e4dc;color:#999;background:#fff;">💰10元以下</button>
+      <button onclick="filterByPrice('mid')" class="px-3 py-1 rounded-full text-xs border price-tag" data-price="mid" style="border-color:#e8e4dc;color:#999;background:#fff;">💰10-20元</button>
+      <button onclick="filterByPrice('high')" class="px-3 py-1 rounded-full text-xs border price-tag" data-price="high" style="border-color:#e8e4dc;color:#999;background:#fff;">💰20-40元</button>
+    </div>
+    <div id="cigaretteGrid" class="grid grid-cols-2 gap-3"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div id="step-question" class="step hidden">
+    <div class="mb-6">
+      <div class="flex justify-between text-xs mb-1" style="color:#b0a89a;">
+        <span>附加诊断</span>
+        <span id="questionProgress">1/3</span>
+      </div>
+      <div class="h-1 rounded-full overflow-hidden" style="background:#e8e4dc;">
+        <div id="progressBar" class="h-full rounded-full transition-all duration-300" style="width:33%;background:#cc4444;"></div>
+      </div>
+    </div>
+    <div class="text-center mb-6 text-xs" style="color:#b0a89a;">
+      你选了 <span id="selectedCigLabel" class="font-bold" style="color:#cc4444;"></span>
+    </div>
+    <div id="questionText" class="text-center text-lg font-bold mb-6" style="color:#3a3a3a;line-height:1.6;"></div>
+    <div id="optionsContainer" class="flex flex-col gap-3"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div id="step-result" class="step hidden">
+    <div id="resultCard" class="mx-auto mb-6 rounded-xl overflow-hidden" style="max-width:340px;background:#faf8f5;border:1px solid #e8e4dc;padding:28px 24px;color:#3a3a3a;">
+      <div class="text-center mb-4">
+        <div class="text-3xl mb-2">🚬</div>
+        <div class="text-xs tracking-widest" style="color:#b0a89a;letter-spacing:3px;">香 烟 性 格 诊 断 书</div>
+      </div>
+      <div id="pixelArtBox" class="flex justify-center mb-4"></div>
+      <div class="text-center py-3 mb-4" style="border-top:1px solid #e8e4dc;border-bottom:1px solid #e8e4dc;">
+        <div class="text-xs mb-1" style="color:#b0a89a;">诊断对象</div>
+        <div id="resultName" class="text-xl font-bold" style="color:#3a3a3a;"></div>
+        <div id="resultMeta" class="text-xs" style="color:#b0a89a;"></div>
+      </div>
+      <div id="resultTag" class="text-center text-2xl font-light mb-4 tracking-widest" style="color:#cc4444;letter-spacing:4px;"></div>
+      <div id="resultDesc" class="text-xs mb-4" style="color:#666;line-height:2;text-align:justify;"></div>
+      <div id="resultTraits" class="flex justify-between text-xs mb-4" style="border-top:1px solid #e8e4dc;padding-top:12px;"></div>
+      <div id="resultPunchline" class="text-center text-xs mb-2" style="color:#3a3a3a;font-weight:600;"></div>
+      <div class="text-center text-xs" style="color:#ccc;">长按保存图片 · 分享给你想扎的人</div>
+    </div>
+    <div class="flex gap-3 max-w-sm mx-auto">
+      <button id="saveBtn" onclick="saveCard()" class="flex-1 py-3 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90" style="background:#cc4444;">
+        <i class="fa fa-download mr-1"></i> 保存卡片
+      </button>
+      <button onclick="restart()" class="flex-1 py-3 rounded-lg border text-sm font-medium transition-colors hover:bg-gray-50" style="border-color:#e8e4dc;color:#666;background:#fff;">
+        <i class="fa fa-refresh mr-1"></i> 再测一次
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 工具函数 ============
+
+function generatePixelGrid(instructions) {
+  const cols = 30, rows = 45;
+  const grid = Array.from({length: rows}, () => Array(cols).fill(null));
+  instructions.forEach(({rows: [r1,r2], cols: [c1,c2], color}) => {
+    for (let y = r1; y <= r2; y++) {
+      for (let x = c1; x <= c2; x++) {
+        grid[y][x] = color;
+      }
+    }
+  });
+  return grid;
+}
+
+// ============ 数据定义 ============
+
+const cigarettes = [
+  // ===== 10元档 =====
+  {
+    id: 'hongtashan_1956', name: '红塔山（经典1956）', shortName: '红塔山', model: '经典1956',
+    price: 7.5, factory: '云南中烟', tag: '老派务实',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#ffffff' },         // 纯白背景
+      { rows: [3,13], cols: [12,17], color: '#cc2936' },         // 塔身上段
+      { rows: [3,5], cols: [14,15], color: '#e84040' },          // 塔尖亮区
+      { rows: [8,10], cols: [10,19], color: '#cc2936' },         // 第一层塔檐展开
+      { rows: [9,9], cols: [10,19], color: '#8b0000' },          // 檐下暗线
+      { rows: [14,23], cols: [12,17], color: '#cc2936' },         // 塔身中段
+      { rows: [18,20], cols: [9,20], color: '#cc2936' },         // 第二层塔檐展开
+      { rows: [19,19], cols: [9,20], color: '#8b0000' },          // 檐下暗线
+      { rows: [24,34], cols: [12,17], color: '#cc2936' },         // 塔身下段
+      { rows: [28,30], cols: [8,21], color: '#cc2936' },         // 第三层塔檐展开
+      { rows: [29,29], cols: [8,21], color: '#8b0000' },          // 檐下暗线
+      { rows: [35,38], cols: [7,22], color: '#8b0000' },          // 深红塔基（宽）
+      { rows: [36,37], cols: [10,19], color: '#5a0000' },         // 塔基暗门
+      { rows: [40,43], cols: [7,22], color: '#cc2936' },         // 底部品牌红条
+      { rows: [41,42], cols: [10,19], color: '#e84040' },         // 品牌条亮区
+    ]),
+    traits: { academic: '稳扎稳打', social: '不善言辞但靠谱', romance: '钢铁直男' },
+    description: '你信奉"够用就行"。七块五的红塔山抽的不是烟，是一种生活态度——不花里胡哨，不装腔作势。实验室里你是最稳的那个，实验做不出来就再做一次，从不抱怨。导师可能记不住你的名字，但你交上去的数据他从没打回过。',
+    punchline: '不懂什么叫精致，但懂什么叫靠谱。'
+  },
+  {
+    id: 'baisha_soft', name: '白沙（软）', shortName: '白沙', model: '软',
+    price: 6, factory: '湖南中烟', tag: '佛系青年',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },         // 奶油色底
+      { rows: [0,3], cols: [0,29], color: '#e8ddc8' },          // 顶部淡边
+      { rows: [15,28], cols: [0,29], color: '#2d5a27' },         // 绿色横带主体
+      { rows: [16,27], cols: [1,28], color: '#3a7d30' },         // 绿带亮区
+      { rows: [15,15], cols: [0,29], color: '#1a4a1a' },          // 绿带上边框
+      { rows: [28,28], cols: [0,29], color: '#1a4a1a' },          // 绿带下边框
+      { rows: [20,22], cols: [3,26], color: '#ffffff' },           // 白色文字条
+      { rows: [21,21], cols: [6,23], color: '#f8f4e8' },          // 文字条微调
+      { rows: [17,19], cols: [6,23], color: '#1a5a1a' },          // 上部暗纹
+      { rows: [25,27], cols: [6,23], color: '#1a5a1a' },          // 下部暗纹
+      { rows: [41,44], cols: [0,29], color: '#e8ddc8' },         // 底部淡边
+    ]),
+    traits: { academic: '随缘出成果', social: '人畜无害', romance: '缘分到了自然有' },
+    description: '你是真正的佛系选手。论文爱发不发，实验爱做不做，六块钱的白沙夹在指间，眼神里写满了"随缘"。但别被表象骗了——你心里比谁都清楚自己要什么，只是觉得没必要跟每个人解释。',
+    punchline: '看透了科研的本质，所以选择躺平。'
+  },
+  {
+    id: 'huangshan_memory', name: '黄山（记忆）', shortName: '黄山', model: '记忆',
+    price: 10, factory: '安徽中烟', tag: '念旧青年',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },         // 奶油色底
+      { rows: [0,3], cols: [0,29], color: '#faf7f0' },          // 顶部淡边
+      { rows: [25,42], cols: [5,11], color: '#2d5a27' },         // 左山体下部
+      { rows: [25,42], cols: [14,20], color: '#2d5a27' },         // 中山体下部
+      { rows: [30,42], cols: [10,25], color: '#2d5a27' },         // 山体底部连片
+      { rows: [15,30], cols: [10,25], color: '#2d5a27' },         // 山体中部
+      { rows: [8,18], cols: [11,18], color: '#2d5a27' },         // 主峰中上段
+      { rows: [4,10], cols: [12,17], color: '#2d5a27' },         // 主峰上部
+      { rows: [2,5], cols: [14,15], color: '#2d5a27' },          // 主峰尖顶
+      { rows: [10,15], cols: [9,9], color: '#1a4a1a' },          // 左山脊
+      { rows: [10,15], cols: [20,20], color: '#1a4a1a' },         // 右山脊
+      { rows: [18,22], cols: [12,17], color: '#3a7d30' },        // 山体亮区
+      { rows: [36,38], cols: [8,21], color: '#1a4a1a' },          // 山脚暗区
+    ]),
+    traits: { academic: '怀旧式科研', social: '重感情的哥们', romance: '放不下前任' },
+    description: '你是个念旧的人。抽黄山记忆不是因为没钱，是因为这烟让你想起本科时和室友在阳台吹牛的夜晚。实验室里你是那种会把学长留下的代码注释读完的人。重感情，讲义气，但也容易被过去困住。',
+    punchline: '每一根烟都是一段回忆，问题是你回忆太多了。'
+  },
+  {
+    id: 'changbaishan_yingchun', name: '长白山（迎春）', shortName: '长白山', model: '迎春',
+    price: 10, factory: '吉林中烟', tag: '东北老铁',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#8cc4b0' },          // 青瓷绿背景
+      { rows: [0,2], cols: [0,29], color: '#5a9a82' },           // 顶部深绿边
+      { rows: [3,5], cols: [8,21], color: '#d4a843' },           // 金色文字区
+      { rows: [4,4], cols: [10,19], color: '#f0d060' },          // 文字亮区
+      { rows: [8,30], cols: [13,16], color: '#ffffff' },          // 白色山峰主体
+      { rows: [6,11], cols: [12,17], color: '#ffffff' },          // 峰顶
+      { rows: [6,7], cols: [14,15], color: '#e8f8f0' },          // 峰尖
+      { rows: [12,20], cols: [10,19], color: '#ffffff' },         // 山腰
+      { rows: [21,30], cols: [7,22], color: '#ffffff' },          // 山底宽
+      { rows: [32,44], cols: [0,29], color: '#5a9a82' },          // 深绿基座
+      { rows: [35,37], cols: [8,21], color: '#d4a843' },          // 金色腰线
+      { rows: [36,36], cols: [10,19], color: '#f0d060' },         // 腰线亮区
+      { rows: [38,40], cols: [9,20], color: '#8cc4b0' },          // 基座内浅纹
+    ]),
+    traits: { academic: '实诚型科研', social: '自来熟', romance: '贼拉稀罕你' },
+    description: '十块钱的长白山迎春，东北人的实诚全写在烟上了——不贵但好抽。你在实验室就是那个"有事你说话"的人，帮师弟跑数据、帮师姐取快递，从不计较。感情里也直来直去，喜欢就追，不喜欢就说明白。',
+    punchline: '东北人的浪漫：啥也憋说了，都在烟里。'
+  },
+
+  // ===== 10-20元档 =====
+  {
+    id: 'hongtashan_soft_white', name: '红塔山（软白）', shortName: '红塔山', model: '软白',
+    price: 11, factory: '云南中烟', tag: '极致性价比',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#ffffff' },          // 纯白背景
+      { rows: [5,11], cols: [11,18], color: '#cc2936' },          // 塔身上段
+      { rows: [5,7], cols: [13,16], color: '#e84040' },           // 塔尖
+      { rows: [12,14], cols: [9,20], color: '#cc2936' },          // 第一层塔檐
+      { rows: [13,13], cols: [9,20], color: '#8b0000' },           // 檐下暗线
+      { rows: [15,21], cols: [11,18], color: '#cc2936' },          // 塔身中段
+      { rows: [22,24], cols: [8,21], color: '#cc2936' },          // 第二层塔檐
+      { rows: [23,23], cols: [8,21], color: '#8b0000' },           // 檐下暗线
+      { rows: [25,31], cols: [11,18], color: '#cc2936' },          // 塔身下段
+      { rows: [32,35], cols: [7,22], color: '#8b0000' },           // 塔基
+      { rows: [33,34], cols: [10,19], color: '#5a0000' },          // 塔门
+      { rows: [37,40], cols: [7,22], color: '#cc2936' },          // 底部品牌条
+      { rows: [38,39], cols: [10,19], color: '#e84040' },          // 品牌条亮区
+    ]),
+    traits: { academic: '实用主义科研', social: '不整虚的', romance: '行动派' },
+    description: '十一块的红塔山软白，比经典1956贵了不到四块，但你觉得这四块花得值。你追求的不是贵，是"刚刚好"。科研上你不求发顶刊，能顺利毕业就行。做人也一样，不求人见人爱，几个真朋友足矣。',
+    punchline: '不追求最好，但决不将就。'
+  },
+  {
+    id: 'baisha_jingpin', name: '白沙（精品）', shortName: '白沙', model: '精品',
+    price: 12, factory: '湖南中烟', tag: '低调务实',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#ffffff' },          // 白色背景
+      { rows: [0,5], cols: [0,29], color: '#2d5a27' },           // 顶部绿带
+      { rows: [0,0], cols: [0,29], color: '#1a4a1a' },           // 顶部细暗线
+      { rows: [5,5], cols: [0,29], color: '#1a4a1a' },           // 绿带底边
+      { rows: [19,24], cols: [0,29], color: '#2d5a27' },          // 中部绿带
+      { rows: [20,23], cols: [1,28], color: '#3a7d30' },          // 中部绿带亮区
+      { rows: [19,19], cols: [0,29], color: '#1a4a1a' },          // 中部绿带上边
+      { rows: [24,24], cols: [0,29], color: '#1a4a1a' },          // 中部绿带下边
+      { rows: [39,44], cols: [0,29], color: '#2d5a27' },          // 底部绿带
+      { rows: [39,39], cols: [0,29], color: '#1a4a1a' },          // 底部绿带上边
+      { rows: [10,14], cols: [8,21], color: '#e8f0e0' },          // 文字淡影区
+    ]),
+    traits: { academic: '踏实肯干', social: '不善言辞', romance: '老实人的浪漫' },
+    description: '你对生活的态度就四个字：差不多得了。十二块的白沙精品，比普通白沙贵一倍，你觉得这已经是"对自己好一点"了。科研上不挂科就行，社交上不社死就行，感情里不难过就行。这种"刚刚好"的哲学，其实挺让人羡慕的。',
+    punchline: '你把"平庸"活成了一种境界。'
+  },
+  {
+    id: 'yunyan_soft_zhenpin', name: '云烟（软珍品）', shortName: '云烟', model: '软珍品',
+    price: 15, factory: '云南中烟', tag: '内敛有料',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },          // 奶油色背景
+      { rows: [5,39], cols: [0,3], color: '#8b4513' },            // 左侧棕色竖条
+      { rows: [5,39], cols: [26,29], color: '#8b4513' },           // 右侧棕色竖条
+      { rows: [6,38], cols: [1,2], color: '#a0522d' },            // 左条亮边
+      { rows: [6,38], cols: [27,28], color: '#a0522d' },           // 右条亮边
+      { rows: [21,23], cols: [4,25], color: '#8b4513' },           // 中央棕线
+      { rows: [22,22], cols: [6,23], color: '#a0522d' },           // 棕线亮区
+      { rows: [7,20], cols: [5,24], color: '#faf5e8' },           // 上半留白区
+      { rows: [24,38], cols: [5,24], color: '#faf5e8' },           // 下半留白区
+      { rows: [0,3], cols: [0,29], color: '#f0e8d8' },           // 顶部淡边
+      { rows: [41,44], cols: [0,29], color: '#f0e8d8' },           // 底部淡边
+    ]),
+    traits: { academic: '深藏不露', social: '慢热型', romance: '不主动不拒绝' },
+    description: '你属于那种"越了解越有味道"的人。初见可能觉得你有点闷，相处久了才发现你肚子里有货。十五块的云烟软珍品跟你的气质一模一样——不张扬，但懂的人自然懂。感情里你也是慢热型，不主动不拒绝，让人摸不透。',
+    punchline: '深藏不露的人，往往是最有意思的。'
+  },
+  {
+    id: 'huanghelou_tianxiaminglou', name: '黄鹤楼（天下名楼）', shortName: '黄鹤楼', model: '天下名楼',
+    price: 15, factory: '湖北中烟', tag: '细支玩家',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a3a5c' },           // 深蓝背景
+      { rows: [0,2], cols: [0,29], color: '#0d1f33' },           // 顶部极深蓝
+      { rows: [2,4], cols: [12,17], color: '#d4a843' },           // 塔尖顶部
+      { rows: [5,10], cols: [11,18], color: '#d4a843' },           // 塔身上段
+      { rows: [12,22], cols: [10,19], color: '#d4a843' },          // 塔身中段
+      { rows: [24,34], cols: [9,20], color: '#d4a843' },           // 塔身下段
+      { rows: [36,42], cols: [8,21], color: '#d4a843' },           // 塔基底座
+      { rows: [12,12], cols: [10,19], color: '#0d1f33' },          // 层间暗线1
+      { rows: [24,24], cols: [9,20], color: '#0d1f33' },           // 层间暗线2
+      { rows: [5,42], cols: [14,15], color: '#0d1f33' },           // 竖向中线
+      { rows: [14,20], cols: [11,12], color: '#b8942e' },          // 中段左窗暗
+      { rows: [14,20], cols: [17,18], color: '#b8942e' },          // 中段右窗暗
+      { rows: [26,32], cols: [11,12], color: '#b8942e' },          // 下段左窗暗
+      { rows: [26,32], cols: [17,18], color: '#b8942e' },          // 下段右窗暗
+    ]),
+    traits: { academic: '细节控', social: '精致社交', romance: '温柔体贴' },
+    description: '你偏好细支，说明你是个注重细节的人。十五块的天下名楼，细长优雅，跟你做实验时的风格一模一样——精细、耐心、一丝不苟。缺点是偶尔纠结于细节忘了大方向，导师最常对你说的话是"这个可以了，不用再优化了"。',
+    punchline: '你的细致让导师又爱又恨。'
+  },
+  {
+    id: 'zhongnanhai_baozhu', name: '中南海（爆珠）', shortName: '中南海', model: '爆珠',
+    price: 15, factory: '北京卷烟厂', tag: '爆珠玩家',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a2a4a' },           // 深蓝背景
+      { rows: [0,3], cols: [0,29], color: '#0d1a33' },            // 顶部极深
+      { rows: [4,6], cols: [6,23], color: '#c0d0e0' },            // 银色文字条
+      { rows: [5,5], cols: [8,21], color: '#e0e8f0' },            // 银条亮区
+      { rows: [12,28], cols: [8,21], color: '#c0d0e0' },           // 银色外圈环
+      { rows: [15,25], cols: [11,18], color: '#1a2a4a' },          // 环内深蓝
+      { rows: [16,24], cols: [12,17], color: '#d0dae8' },          // 内环亮银
+      { rows: [18,22], cols: [13,16], color: '#e8eef5' },          // 中心高光
+      { rows: [14,26], cols: [14,15], color: '#8aa0c0' },          // 竖向冰晶线
+      { rows: [19,21], cols: [10,19], color: '#8aa0c0' },          // 横向冰晶线
+      { rows: [34,35], cols: [14,15], color: '#e0e8f0' },          // 爆珠银点
+      { rows: [40,43], cols: [8,21], color: '#c0d0e0' },           // 底部银条
+    ]),
+    traits: { academic: '一捏就灵', social: '清凉型社交', romance: '需要的时候才主动' },
+    description: '中南海爆珠——不捏的时候平平无奇，一捏下去冰爽直冲天灵盖。你跟这烟一样，平时看着普普通通，关键时刻一出手就是"卧槽原来你这么强"。感情里也是——平时闷不吭声，关键表白时刻比谁都勇。',
+    punchline: '不鸣则已，一鸣惊人。爆珠如此，你亦如此。'
+  },
+  {
+    id: 'nanjing_xuanhemen', name: '南京（炫赫门）', shortName: '南京', model: '炫赫门',
+    price: 16, factory: '江苏中烟', tag: '甜系男孩',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#c5e8f0' },           // 浅青蓝背景
+      { rows: [0,3], cols: [0,29], color: '#a8d8e6' },            // 顶部淡边
+      { rows: [41,44], cols: [0,29], color: '#a8d8e6' },           // 底部淡边
+      { rows: [16,26], cols: [0,29], color: '#5b7a9a' },           // 深蓝紫中央横带
+      { rows: [17,25], cols: [1,28], color: '#6b8aaa' },           // 横带亮区
+      { rows: [16,16], cols: [0,29], color: '#3d5a7a' },           // 横带上边
+      { rows: [26,26], cols: [0,29], color: '#3d5a7a' },           // 横带下边
+      { rows: [20,21], cols: [3,26], color: '#ffffff' },            // 白线
+      { rows: [20,20], cols: [8,21], color: '#e0f0f5' },           // 白线高亮
+      { rows: [8,12], cols: [8,21], color: '#8caec8' },            // 上部淡纹
+      { rows: [30,34], cols: [8,21], color: '#8caec8' },           // 下部淡纹
+    ]),
+    traits: { academic: '组会划水专业户', social: '人见人爱', romance: '中央空调' },
+    description: '你抽的是带甜味的烟，当的是带甜味的人。在课题组你是气氛担当，师姐师妹都愿意找你帮忙。但"好人卡"收多了也会累。你有时候也想知道，到底是大家真的需要你，还是你太好说话了。',
+    punchline: '甜的烟，苦的心里。中央空调不配有真爱。'
+  },
+  {
+    id: 'liqun_soft_red', name: '利群（软红）', shortName: '利群', model: '软红',
+    price: 18, factory: '浙江中烟', tag: '稳中带浪',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#c41e2a' },           // 深红背景
+      { rows: [0,1], cols: [0,29], color: '#d4a843' },            // 顶部金边框
+      { rows: [43,44], cols: [0,29], color: '#d4a843' },           // 底部金边框
+      { rows: [8,11], cols: [4,26], color: '#ffffff' },            // 上白条
+      { rows: [9,10], cols: [10,14], color: '#c41e2a' },           // 上白条内红块左
+      { rows: [9,10], cols: [16,20], color: '#c41e2a' },           // 上白条内红块右
+      { rows: [17,20], cols: [4,26], color: '#ffffff' },           // 下白条
+      { rows: [18,19], cols: [10,14], color: '#c41e2a' },           // 下白条内红块左
+      { rows: [18,19], cols: [16,20], color: '#c41e2a' },           // 下白条内红块右
+      { rows: [2,7], cols: [3,26], color: '#a01822' },            // 上部暗区
+      { rows: [12,16], cols: [3,26], color: '#a01822' },           // 中部暗区
+      { rows: [21,42], cols: [3,26], color: '#a01822' },           // 下部暗区
+      { rows: [35,39], cols: [8,21], color: '#c41e2a' },           // 底部文字区亮
+    ]),
+    traits: { academic: '闷声发大财', social: '话少但靠谱', romance: '被动型选手' },
+    description: '你是实验室里最低调的那个。导师以为你啥也没干，但其实你才是项目的隐藏大腿。不争不抢不代表你不会，只是懒得解释。感情里也是——嘴上说随便，心里比谁都在乎。深夜的楼梯间，一根利群的时间够你想通很多事。',
+    punchline: '看起来没在卷，实际上卷得比谁都狠。'
+  },
+  {
+    id: 'huangshan_dahongfangyin', name: '黄山（大红方印）', shortName: '黄山', model: '大红方印',
+    price: 18, factory: '安徽中烟', tag: '古风青年',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#cc2936' },           // 红色背景
+      { rows: [0,2], cols: [0,29], color: '#a01822' },            // 顶部暗红
+      { rows: [42,44], cols: [0,29], color: '#a01822' },           // 底部暗红
+      { rows: [8,36], cols: [5,24], color: '#f5f0e8' },            // 奶油色方印（外框）
+      { rows: [10,34], cols: [7,22], color: '#8b0000' },           // 深红内框
+      { rows: [13,31], cols: [9,20], color: '#f5f0e8' },           // 奶油色芯
+      { rows: [8,8], cols: [5,24], color: '#8b0000' },             // 外框上边
+      { rows: [36,36], cols: [5,24], color: '#8b0000' },           // 外框下边
+      { rows: [8,36], cols: [5,5], color: '#8b0000' },             // 外框左边
+      { rows: [8,36], cols: [24,24], color: '#8b0000' },           // 外框右边
+      { rows: [10,10], cols: [7,22], color: '#8b0000' },           // 内框上边
+      { rows: [34,34], cols: [7,22], color: '#8b0000' },           // 内框下边
+      { rows: [10,34], cols: [7,7], color: '#8b0000' },            // 内框左边
+      { rows: [10,34], cols: [22,22], color: '#8b0000' },          // 内框右边
+      { rows: [16,28], cols: [10,19], color: '#cc2936' },          // 中心红印
+      { rows: [18,26], cols: [12,17], color: '#e84040' },          // 印心亮区
+    ]),
+    traits: { academic: '论文排版强迫症', social: '文艺社交', romance: '写诗的浪漫' },
+    description: '十八块的黄山大红方印，包装上的书法字体就透着一股文人气。你确实是课题组里最有"古风气质"的那个——论文排版强迫症，PPT配色讲究，连实验记录本的笔迹都比别人好看。缺点是偶尔太注重形式忘了内容。',
+    punchline: '论文可以发不了，但排版必须好看。'
+  },
+  {
+    id: 'lanzhou_heizhongzhi', name: '兰州（黑中支）', shortName: '兰州', model: '黑中支',
+    price: 18, factory: '甘肃中烟', tag: '西北硬汉',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a1a1a' },           // 纯黑背景
+      { rows: [0,1], cols: [0,29], color: '#252525' },            // 顶部基色
+      { rows: [2,3], cols: [4,25], color: '#c0c0c0' },            // 银色顶线
+      { rows: [41,42], cols: [4,25], color: '#c0c0c0' },           // 银线底线
+      { rows: [14,28], cols: [10,19], color: '#c0c0c0' },           // 飞天仕女曲线主体
+      { rows: [16,26], cols: [11,18], color: '#d8d8d8' },          // 飞天亮区
+      { rows: [18,24], cols: [12,17], color: '#e8e8e8' },          // 飞天高光
+      { rows: [14,28], cols: [10,10], color: '#909090' },           // 飞天左暗线
+      { rows: [14,28], cols: [19,19], color: '#909090' },           // 飞天右暗线
+      { rows: [7,13], cols: [13,16], color: '#c0c0c0' },           // 飞天头部云纹
+      { rows: [29,35], cols: [13,16], color: '#c0c0c0' },           // 飞天下摆
+      { rows: [43,44], cols: [0,29], color: '#252525' },           // 底部基色
+    ]),
+    traits: { academic: '硬核科研', social: '人狠话不多', romance: '铁汉柔情' },
+    description: '十八块的黑中支兰州，黑金配色低调但不失格调。你这人就跟兰州一样——西北来的，不整虚的。实验做不出来？加个通宵。论文被拒？改完再投。骨子里有种"干就完了"的劲儿，让人佩服也让人心疼。',
+    punchline: '西北的风沙磨不掉你的棱角，只会让你越来越硬。'
+  },
+  {
+    id: 'huanghelou_soft_blue', name: '黄鹤楼（软蓝）', shortName: '黄鹤楼', model: '软蓝',
+    price: 19, factory: '湖北中烟', tag: '精致穷',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#d4a843' },           // 金色背景
+      { rows: [0,3], cols: [0,29], color: '#c49a2e' },            // 顶部金暗区
+      { rows: [41,44], cols: [0,29], color: '#c49a2e' },           // 底部金暗区
+      { rows: [15,28], cols: [0,29], color: '#1a3a5c' },           // 深蓝色中央横带
+      { rows: [16,27], cols: [1,28], color: '#224a6e' },           // 蓝带亮区
+      { rows: [15,15], cols: [0,29], color: '#0d1f33' },           // 蓝带上边
+      { rows: [28,28], cols: [0,29], color: '#0d1f33' },           // 蓝带下边
+      { rows: [23,27], cols: [10,19], color: '#d4a843' },           // 塔基（宽）
+      { rows: [18,22], cols: [11,18], color: '#d4a843' },           // 塔身中层
+      { rows: [15,17], cols: [12,17], color: '#d4a843' },           // 塔身上层
+      { rows: [14,14], cols: [14,15], color: '#d4a843' },           // 塔尖
+      { rows: [16,17], cols: [14,15], color: '#1a3a5c' },           // 塔身中窗
+      { rows: [19,22], cols: [13,14], color: '#1a3a5c' },          // 中层左窗
+      { rows: [19,22], cols: [15,16], color: '#1a3a5c' },          // 中层右窗
+      { rows: [24,26], cols: [13,15], color: '#1a3a5c' },          // 下层窗
+    ]),
+    traits: { academic: '注重形式感', social: '朋友圈经营大师', romance: '浪漫但没钱' },
+    description: '十九块的黄鹤楼软蓝，是研究生群体里最微妙的存在——比十元档体面，比三十元档实在。你是朋友圈里的"精致穷"代言人，实验数据做得漂亮，桌面收拾得干净，工资卡余额却永远让人沉默。',
+    punchline: '过得精致是态度，钱包空空是现实。'
+  },
+  {
+    id: 'taishan_yanyue', name: '泰山（颜悦）', shortName: '泰山', model: '颜悦',
+    price: 19, factory: '山东中烟', tag: '颜值担当',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#7ec8e3' },           // 浅蓝背景
+      { rows: [0,2], cols: [0,29], color: '#4a9ebb' },            // 顶部深蓝边
+      { rows: [3,5], cols: [8,21], color: '#d4a843' },            // 金色文字条
+      { rows: [10,32], cols: [13,16], color: '#ffffff' },          // 白色山峰主体
+      { rows: [7,12], cols: [12,17], color: '#ffffff' },           // 峰顶
+      { rows: [7,8], cols: [14,15], color: '#e8f4f8' },           // 峰尖顶点
+      { rows: [13,22], cols: [11,18], color: '#ffffff' },          // 山腰展宽
+      { rows: [23,32], cols: [8,21], color: '#ffffff' },           // 山底
+      { rows: [10,32], cols: [10,10], color: '#4a9ebb' },          // 山左暗线
+      { rows: [10,32], cols: [19,19], color: '#4a9ebb' },          // 山右暗线
+      { rows: [35,40], cols: [10,19], color: '#d4a843' },           // 金色莲花纹区
+      { rows: [36,39], cols: [12,17], color: '#f0d060' },          // 莲纹亮区
+      { rows: [42,44], cols: [0,29], color: '#3a7e9e' },           // 底部深色
+    ]),
+    traits: { academic: '精致科研人', social: '颜值社交', romance: '看脸也走心' },
+    description: '十九块的泰山颜悦，蓝白配色看着就舒服。你就跟这烟一样——长得好看还实用。实验室里桌面最整洁的是你，PPT做得最好看的也是你。有人说你靠脸吃饭，你说"我靠的是实力，脸只是加分项"。',
+    punchline: '颜值能打，实力也能扛。你就是实验室的门面。'
+  },
+
+  // ===== 20-40元档 =====
+  {
+    id: 'nanjing_12', name: '南京（十二钗）', shortName: '南京', model: '十二钗',
+    price: 22, factory: '江苏中烟', tag: '文艺青年',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#e8dcc8' },           // 浅褐色背景
+      { rows: [0,5], cols: [0,29], color: '#8b2252' },            // 顶部紫红带
+      { rows: [1,4], cols: [1,28], color: '#a03060' },            // 紫带亮区
+      { rows: [39,44], cols: [0,29], color: '#8b2252' },           // 底部紫红带
+      { rows: [40,43], cols: [1,28], color: '#a03060' },           // 底部紫带亮区
+      { rows: [8,35], cols: [4,25], color: '#8b2252' },            // 紫色画框
+      { rows: [10,33], cols: [6,23], color: '#e8dcc8' },           // 框内浅底
+      { rows: [8,8], cols: [4,25], color: '#5a1535' },             // 框上暗边
+      { rows: [35,35], cols: [4,25], color: '#5a1535' },           // 框下暗边
+      { rows: [8,35], cols: [4,4], color: '#5a1535' },             // 框左暗边
+      { rows: [8,35], cols: [25,25], color: '#5a1535' },           // 框右暗边
+      { rows: [16,26], cols: [11,18], color: '#a03060' },          // 人物画芯区
+      { rows: [18,24], cols: [13,16], color: '#e8dcc8' },          // 人物亮区
+      { rows: [20,22], cols: [14,15], color: '#a03060' },          // 人物暗点
+    ]),
+    traits: { academic: '论文写得像散文', social: '文人气质', romance: '精神恋爱' },
+    description: '二十二的南京十二钗，光名字就透着一股文艺病。你确实是课题组里的"异类"——论文致谢都写成散文诗，实验室BGM永远是小众民谣。有人觉得你不接地气，但你知道自己只是不想活得太糙。',
+    punchline: '浪漫是种病，你已经病入膏肓。'
+  },
+  {
+    id: 'yuxi_soft', name: '玉溪（软）', shortName: '玉溪', model: '软',
+    price: 23, factory: '红塔集团', tag: '老干部风',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },          // 奶油色背景
+      { rows: [2,4], cols: [10,19], color: '#d4a843' },           // 顶部金色文字条
+      { rows: [8,8], cols: [14,15], color: '#cc2936' },           // 钻石顶行
+      { rows: [9,9], cols: [12,17], color: '#cc2936' },           // 钻石第2行
+      { rows: [10,11], cols: [10,19], color: '#cc2936' },          // 钻石第3-4行
+      { rows: [12,13], cols: [8,21], color: '#cc2936' },           // 钻石第5-6行
+      { rows: [14,18], cols: [7,22], color: '#cc2936' },           // 钻石最宽处
+      { rows: [19,22], cols: [5,24], color: '#cc2936' },           // 钻石最大展开
+      { rows: [23,26], cols: [7,22], color: '#cc2936' },           // 钻石收缩
+      { rows: [27,28], cols: [10,19], color: '#cc2936' },          // 钻石继续收缩
+      { rows: [29,30], cols: [12,17], color: '#cc2936' },          // 钻石近底
+      { rows: [31,31], cols: [14,15], color: '#cc2936' },          // 钻石底尖
+      { rows: [4,4], cols: [5,5], color: '#cc2936' },             // 小红点1
+      { rows: [25,25], cols: [24,24], color: '#cc2936' },          // 小红点2
+      { rows: [38,38], cols: [5,5], color: '#cc2936' },            // 小红点3
+      { rows: [15,17], cols: [11,18], color: '#f5f0e8' },          // 钻石内亮窗
+    ]),
+    traits: { academic: '课题组二哥', social: '师长型社交', romance: '以结婚为目的' },
+    description: '二十三块的玉溪软包，你抽出了四十岁老干部的从容。课题组里你不是最卷的，但导师最信任你。社交场上不玩花活，但每次聚餐都是你在默默买单。你身上有种"大哥"气质，让人不由自主想跟着你干。',
+    punchline: '你才二十五，活得像个系主任。'
+  },
+  {
+    id: 'guiyan_kuayue', name: '贵烟（跨越）', shortName: '贵烟', model: '跨越',
+    price: 23, factory: '贵州中烟', tag: '陈皮玩家',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a1a1a' },           // 黑色背景
+      { rows: [0,1], cols: [0,29], color: '#252525' },            // 顶部微亮
+      { rows: [43,44], cols: [0,29], color: '#252525' },           // 底部微亮
+      { rows: [13,16], cols: [18,26], color: '#c0c0c0' },          // 银色十字横臂
+      { rows: [18,26], cols: [13,16], color: '#c0c0c0' },          // 银色十字竖臂
+      { rows: [16,17], cols: [15,19], color: '#c0c0c0' },          // 十字接合上部
+      { rows: [15,25], cols: [16,18], color: '#e8e8e8' },          // 十字交叉高光
+      { rows: [18,26], cols: [14,15], color: '#e8e8e8' },          // 竖臂右亮
+      { rows: [5,7], cols: [8,10], color: '#c0c0c0' },            // 散点1
+      { rows: [18,19], cols: [24,25], color: '#c0c0c0' },          // 散点2
+      { rows: [28,29], cols: [7,8], color: '#c0c0c0' },           // 散点3
+      { rows: [38,39], cols: [22,23], color: '#c0c0c0' },          // 散点4
+      { rows: [32,33], cols: [14,15], color: '#f39800' },          // 橙色陈皮爆珠
+    ]),
+    traits: { academic: '另辟蹊径', social: '小众圈子', romance: '独特品味' },
+    description: '二十三的贵烟跨越，带陈皮爆珠的口感让人又爱又恨。你跟这烟一样——小众但有个性。在课题组里你不走寻常路，做的方向都跟别人不一样。有人觉得你在瞎搞，直到你发了一篇他们看不懂的论文。',
+    punchline: '走自己的路，让他们说"这什么玩意"。'
+  },
+  {
+    id: 'furongwang_hard_yellow', name: '芙蓉王（硬黄）', shortName: '芙蓉王', model: '硬黄',
+    price: 25, factory: '湖南中烟', tag: '务实狠人',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#d4a843' },           // 金色背景
+      { rows: [0,6], cols: [0,29], color: '#1a3a5c' },            // 顶部深蓝带
+      { rows: [1,5], cols: [2,27], color: '#224a6e' },            // 蓝带亮区
+      { rows: [38,44], cols: [0,29], color: '#1a3a5c' },           // 底部深蓝带
+      { rows: [39,43], cols: [2,27], color: '#224a6e' },           // 底部蓝带亮区
+      { rows: [12,24], cols: [12,17], color: '#1a3a5c' },          // 皇冠/花主体菱形
+      { rows: [15,21], cols: [13,16], color: '#d4a843' },          // 菱形内金色芯
+      { rows: [10,11], cols: [13,16], color: '#1a3a5c' },          // 顶部皇冠点
+      { rows: [13,23], cols: [11,11], color: '#1a3a5c' },          // 菱形左翅
+      { rows: [13,23], cols: [18,18], color: '#1a3a5c' },          // 菱形右翅
+      { rows: [27,32], cols: [9,20], color: '#b8942e' },           // 下部文字暗影区
+    ]),
+    traits: { academic: '实验室卷王', social: '社交自如', romance: '直男式关怀' },
+    description: '你是那种让人放心的存在。组会从不掉链子，实验数据永远齐整，社交场上不卑不亢。二十五块的芙蓉王硬黄往桌上一放，不用说话就透着两个字：踏实。但只有你自己知道，这种"稳"是拿多少根烟换来的。',
+    punchline: '实验室的硬通货，做人也一样。'
+  },
+  {
+    id: 'yunyan_soft_li', name: '云烟（软礼）', shortName: '云烟', model: '软礼',
+    price: 28, factory: '云南中烟', tag: '讲究人',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },          // 奶油色背景
+      { rows: [0,5], cols: [0,29], color: '#8b4513' },            // 顶部厚棕带
+      { rows: [2,4], cols: [2,27], color: '#a0522d' },            // 棕带亮区
+      { rows: [39,44], cols: [0,29], color: '#8b4513' },           // 底部厚棕带
+      { rows: [40,43], cols: [2,27], color: '#a0522d' },           // 底部棕带亮区
+      { rows: [9,35], cols: [5,24], color: '#8b4513' },            // 中央棕色外框
+      { rows: [12,32], cols: [8,21], color: '#f5f0e8' },           // 框内奶油区
+      { rows: [9,9], cols: [5,24], color: '#5a2d0c' },             // 框上暗线
+      { rows: [35,35], cols: [5,24], color: '#5a2d0c' },           // 框下暗线
+      { rows: [9,35], cols: [5,5], color: '#5a2d0c' },             // 框左暗线
+      { rows: [9,35], cols: [24,24], color: '#5a2d0c' },           // 框右暗线
+      { rows: [17,27], cols: [10,19], color: '#a0522d' },          // 框内棕色横纹
+      { rows: [19,25], cols: [12,17], color: '#f5f0e8' },          // 横纹内奶油芯
+    ]),
+    traits: { academic: '追求品质的科研', social: '品味型社交', romance: '仪式感拉满' },
+    description: '你对"品质"有种近乎偏执的追求。二十八块的云烟软礼，你说贵但值。实验器材要用最好的，论文数据要最精确的，女朋友要找最合适的——宁愿单着也不将就。有人觉得你矫情，但你觉得这叫"讲究"。',
+    punchline: '你不是装，你是真讲究。将就是不可能将就的。'
+  },
+  {
+    id: 'liqun_sunshine', name: '利群（阳光）', shortName: '利群', model: '阳光',
+    price: 28, factory: '浙江中烟', tag: '阳光型选手',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#f5f0e8' },          // 浅奶油底
+      { rows: [0,5], cols: [0,29], color: '#c41e2a' },            // 顶部红带
+      { rows: [1,4], cols: [2,27], color: '#e84040' },            // 红带亮区
+      { rows: [6,6], cols: [0,29], color: '#d4a843' },            // 金色分隔线
+      { rows: [22,32], cols: [10,19], color: '#c41e2a' },          // 红色方块主体
+      { rows: [23,31], cols: [11,18], color: '#d4303a' },          // 方块亮区
+      { rows: [25,29], cols: [13,16], color: '#f5f0e8' },          // 方块内奶油芯
+      { rows: [22,22], cols: [10,19], color: '#8b0000' },          // 方块上暗边
+      { rows: [32,32], cols: [10,19], color: '#8b0000' },          // 方块下暗边
+      { rows: [22,32], cols: [10,10], color: '#8b0000' },          // 方块左暗边
+      { rows: [22,32], cols: [19,19], color: '#8b0000' },          // 方块右暗边
+      { rows: [38,41], cols: [8,21], color: '#e8ddc8' },           // 底部文字区
+    ]),
+    traits: { academic: '正能量学霸', social: '人脉王', romance: '主动出击' },
+    description: '你身上有种罕见的"阳光学霸"气质。别人卷得苦大仇深，你卷得云淡风轻。利群阳光刚好匹配你的性格——有质感但不沉重。社交场合你是天然的焦点，不是因为话多，是因为跟你待着舒服。',
+    punchline: '卷王不可怕，可怕的是卷王还阳光。'
+  },
+  {
+    id: 'huanghelou_hard_zhenpin', name: '黄鹤楼（硬珍品）', shortName: '黄鹤楼', model: '硬珍品',
+    price: 30, factory: '湖北中烟', tag: '低调有内涵',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a3a5c' },           // 深蓝背景
+      { rows: [0,2], cols: [0,29], color: '#0d1f33' },            // 顶部极深
+      { rows: [3,7], cols: [13,16], color: '#d4a843' },           // 塔尖三角
+      { rows: [8,16], cols: [11,18], color: '#d4a843' },           // 塔身上段
+      { rows: [17,27], cols: [10,19], color: '#d4a843' },          // 塔身中段
+      { rows: [28,38], cols: [8,21], color: '#d4a843' },           // 塔基宽底座
+      { rows: [8,8], cols: [11,18], color: '#0d1f33' },            // 层间线1
+      { rows: [17,17], cols: [10,19], color: '#0d1f33' },          // 层间线2
+      { rows: [28,28], cols: [8,21], color: '#0d1f33' },           // 层间线3
+      { rows: [10,14], cols: [12,13], color: '#0d1f33' },          // 上段左窗
+      { rows: [10,14], cols: [16,17], color: '#0d1f33' },          // 上段右窗
+      { rows: [19,25], cols: [11,12], color: '#0d1f33' },          // 中段左窗
+      { rows: [19,25], cols: [17,18], color: '#0d1f33' },          // 中段右窗
+      { rows: [30,36], cols: [9,10], color: '#0d1f33' },           // 下段左窗
+      { rows: [30,36], cols: [19,20], color: '#0d1f33' },          // 下段右窗
+    ]),
+    traits: { academic: '不露声色的卷', social: '圈内口碑好', romance: '闷骚型' },
+    description: '三十块的黄鹤楼硬珍品，你是那种"低调到让人好奇"的类型。平时不声不响，一出手就是顶刊。不晒不炫，但懂行的人一看你抽的烟就知道你不简单。感情上也是——不主动撩，但一旦心动就是认真的。',
+    punchline: '真正的卷王从不让人看出来他在卷。'
+  },
+  {
+    id: 'zuanshi_hehua', name: '钻石（荷花）', shortName: '钻石', model: '荷花',
+    price: 30, factory: '河北中烟', tag: '低调奢华',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#2d5a27' },           // 绿色背景
+      { rows: [0,2], cols: [0,29], color: '#1a4a1a' },            // 顶部暗绿边
+      { rows: [42,44], cols: [0,29], color: '#1a4a1a' },           // 底部暗绿边
+      { rows: [10,17], cols: [13,16], color: '#f5f0e8' },          // 顶部花瓣（奶油色）
+      { rows: [23,30], cols: [13,16], color: '#f5f0e8' },          // 底部花瓣
+      { rows: [15,25], cols: [9,12], color: '#f5f0e8' },           // 左花瓣
+      { rows: [15,25], cols: [17,20], color: '#f5f0e8' },          // 右花瓣
+      { rows: [18,22], cols: [13,16], color: '#d4a843' },          // 金色花蕊（莲蓬）
+      { rows: [19,21], cols: [14,15], color: '#f0d060' },          // 花蕊亮区
+      { rows: [9,9], cols: [14,15], color: '#f5f0e8' },           // 花尖
+      { rows: [4,7], cols: [11,18], color: '#d4a843' },            // 顶部金色文字区
+      { rows: [5,6], cols: [13,16], color: '#f0d060' },            // 金文亮区
+      { rows: [10,30], cols: [8,8], color: '#1a4a1a' },            // 左花缘暗
+      { rows: [10,30], cols: [21,21], color: '#1a4a1a' },           // 右花缘暗
+    ]),
+    traits: { academic: '不显山露水的卷', social: '质量人脉', romance: '不将就' },
+    description: '你是那种"看不透"的人。三十块的钻石荷花，包装低调但价格一点不低调。你从不主动说自己在做什么，但每次组会展示都能让人眼前一亮。感情上也一样——没人知道你喜欢谁，直到你突然官宣了。',
+    punchline: '话越少的人，秘密越多。'
+  },
+  {
+    id: 'huangshan_huishang', name: '黄山（徽商）', shortName: '黄山', model: '徽商',
+    price: 32, factory: '安徽中烟', tag: '新一代徽商',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#1a1a2e' },           // 深藏蓝背景
+      { rows: [0,3], cols: [0,29], color: '#d4a843' },            // 顶部金带
+      { rows: [1,2], cols: [2,27], color: '#f0d060' },            // 金带亮区
+      { rows: [41,44], cols: [0,29], color: '#d4a843' },           // 底部金带
+      { rows: [42,43], cols: [2,27], color: '#f0d060' },           // 底部金带亮区
+      { rows: [14,30], cols: [10,19], color: '#d4a843' },          // 金色菱形主体
+      { rows: [17,27], cols: [13,16], color: '#1a1a2e' },          // 菱形内深蓝芯
+      { rows: [14,14], cols: [10,19], color: '#b8942e' },          // 菱形上暗边
+      { rows: [30,30], cols: [10,19], color: '#b8942e' },          // 菱形下暗边
+      { rows: [14,30], cols: [10,10], color: '#b8942e' },          // 菱形左暗边
+      { rows: [14,30], cols: [19,19], color: '#b8942e' },          // 菱形右暗边
+      { rows: [22,22], cols: [8,21], color: '#d4a843' },           // 菱形腰线
+      { rows: [20,24], cols: [14,15], color: '#d4a843' },          // 中心金点
+    ]),
+    traits: { academic: '产学研一体', social: '商业头脑', romance: '事业优先' },
+    description: '三十二块的黄山徽商，名字里就带着生意经。你确实比同龄人更早考虑"变现"这件事——别人还在愁论文，你已经在琢磨怎么把技术转化成创业项目。导师觉得你浮躁，但你知道自己只是不想被一纸文凭定义。',
+    punchline: '科研是为了毕业，搞钱是为了生活。'
+  },
+  {
+    id: 'zhonghua_hard', name: '中华（硬）', shortName: '中华', model: '硬',
+    price: 38, factory: '上海烟草', tag: '硬通货玩家',
+    pixelGrid: generatePixelGrid([
+      { rows: [0,44], cols: [0,29], color: '#cc2936' },           // 红色背景
+      { rows: [0,1], cols: [0,29], color: '#a01822' },            // 顶部暗红
+      { rows: [4,7], cols: [13,16], color: '#d4a843' },            // 金色中华文字区
+      { rows: [5,6], cols: [14,15], color: '#f0d060' },            // 文字区亮
+      { rows: [11,13], cols: [5,13], color: '#d4a843' },           // 天安门左屋顶
+      { rows: [11,13], cols: [16,24], color: '#d4a843' },          // 天安门右屋顶
+      { rows: [14,17], cols: [6,23], color: '#d4a843' },           // 天安门横梁
+      { rows: [15,16], cols: [8,21], color: '#f0d060' },           // 横梁亮区
+      { rows: [14,36], cols: [8,10], color: '#d4a843' },           // 左金柱
+      { rows: [14,36], cols: [19,21], color: '#d4a843' },          // 右金柱
+      { rows: [15,35], cols: [9,9], color: '#f0d060' },            // 左柱亮
+      { rows: [15,35], cols: [20,20], color: '#f0d060' },          // 右柱亮
+      { rows: [18,22], cols: [11,18], color: '#8b0000' },          // 门洞暗红区
+      { rows: [39,42], cols: [6,23], color: '#d4a843' },           // 底部金条
+      { rows: [40,41], cols: [8,21], color: '#f0d060' },           // 金条亮区
+    ]),
+    traits: { academic: '导师眼中的苗子', social: '社交硬通货', romance: '不差钱也不差人' },
+    description: '课题组里公认的"排面担当"。三十八块的中华硬盒，不到四十的上限刚好卡住。你不需要主动证明什么，掏出一包中华大家就懂了。学术上有野心，社交场上游刃有余，唯一的问题是——总有人觉得你在装。',
+    punchline: '不是所有烟都叫国烟，不是所有人都懂你。'
+  }
+];
+
+// ============ 状态管理 ============
+let selectedCigarette = null;
+let currentPriceFilter = 'all';
+let currentQuestion = 0;
+let answers = [];
+
+function getPriceTier(price) {
+  if (price < 10) return 'low';
+  if (price <= 20) return 'mid';
+  return 'high';
+}
+
+// ============ 选烟页 ============
+function renderCigarettes(filterText = '') {
+  const grid = document.getElementById('cigaretteGrid');
+  const searchTerm = filterText.toLowerCase();
+
+  const filtered = cigarettes.filter(c => {
+    const matchSearch = !searchTerm ||
+      c.name.toLowerCase().includes(searchTerm) ||
+      c.shortName.toLowerCase().includes(searchTerm) ||
+      c.factory.toLowerCase().includes(searchTerm);
+    const matchPrice = currentPriceFilter === 'all' || getPriceTier(c.price) === currentPriceFilter;
+    return matchSearch && matchPrice;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="col-span-2 text-center py-8" style="color:#b0a89a;">
+      <div class="text-2xl mb-2">🔍</div>
+      <p class="text-sm">没有找到匹配的香烟</p>
+      <p class="text-xs">换个关键词试试？</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(c => `
+    <div class="cig-card bg-white rounded-lg border p-3 text-center"
+      style="border-color:#e8e4dc;"
+      data-id="${c.id}"
+      onclick="selectCigarette('${c.id}', this)">
+      <div class="text-2xl mb-1">🚬</div>
+      <div class="font-bold text-sm" style="color:#3a3a3a;">${c.shortName}</div>
+      <div class="text-xs" style="color:#999;">${c.model}</div>
+      <div class="text-xs mt-1 font-medium" style="color:#cc4444;">¥${c.price}</div>
+      <div class="text-xs mt-0.5" style="color:#b0a89a;">${c.tag}</div>
+    </div>
+  `).join('');
+}
+
+function filterCigarettes() {
+  const text = document.getElementById('searchInput').value;
+  renderCigarettes(text);
+}
+
+function filterByPrice(tier) {
+  currentPriceFilter = tier;
+  document.querySelectorAll('.price-tag').forEach(tag => {
+    const isActive = tag.dataset.price === tier;
+    tag.style.borderColor = isActive ? '#cc4444' : '#e8e4dc';
+    tag.style.color = isActive ? '#cc4444' : '#999';
+    tag.style.background = isActive ? '#fef5f5' : '#fff';
+  });
+  renderCigarettes(document.getElementById('searchInput').value);
+}
+
+function selectCigarette(id, el) {
+  selectedCigarette = cigarettes.find(c => c.id === id);
+  document.querySelectorAll('.cig-card').forEach(card => {
+    card.style.borderColor = '#e8e4dc';
+    card.style.background = '#fff';
+  });
+  el.style.borderColor = '#cc4444';
+  el.style.background = '#fef5f5';
+  setTimeout(() => goToStep('question'), 300);
+}
+
+// ============ 题目数据 ============
+const questions = [
+  {
+    id: 'q1',
+    question: '导师凌晨两点在群里@你说\n"明天讨论一下进度"\n你的第一反应是？',
+    options: [
+      { key: 'A', text: '淡定回复"好的老师"，然后继续打游戏', trait: 'academic' },
+      { key: 'B', text: '心里一紧，连夜打开电脑补实验数据', trait: 'academic' },
+      { key: 'C', text: '装没看见，明早再说，先抽一根压压惊', trait: 'academic' },
+      { key: 'D', text: '反手@师弟，"你数据跑完了吗"', trait: 'academic' }
+    ]
+  },
+  {
+    id: 'q2',
+    question: '论文写到一半，突然觉得这方向根本做不出来\n感觉要延毕了，你会？',
+    options: [
+      { key: 'A', text: '去楼梯间点一根，冷静下来继续肝', trait: 'life' },
+      { key: 'B', text: '默默打开BOSS直聘看看退路', trait: 'life' },
+      { key: 'C', text: '疯狂灌咖啡，今晚不睡了', trait: 'life' },
+      { key: 'D', text: '给导师发消息"老师我觉得方向需要调整"', trait: 'life' }
+    ]
+  },
+  {
+    id: 'q3',
+    question: '实验室聚餐，导师突然让你提一杯\n你的反应是？',
+    options: [
+      { key: 'A', text: '社恐发作，憋了三秒挤出一句"老师辛苦了"', trait: 'social' },
+      { key: 'B', text: '一套祝酒词行云流水，导师频频点头', trait: 'social' },
+      { key: 'C', text: '先干为敬，话都在酒里了', trait: 'social' },
+      { key: 'D', text: '假装接电话溜出去，在门口抽了根烟才回来', trait: 'social' }
+    ]
+  }
+];
+
+// ============ 答题页 ============
+function renderQuestion() {
+  if (currentQuestion >= questions.length) {
+    goToStep('result');
+    return;
+  }
+  const q = questions[currentQuestion];
+
+  if (selectedCigarette) {
+    document.getElementById('selectedCigLabel').textContent = selectedCigarette.shortName;
+  }
+
+  document.getElementById('questionProgress').textContent = `${currentQuestion + 1}/${questions.length}`;
+  document.getElementById('progressBar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+  document.getElementById('questionText').textContent = q.question;
+  document.getElementById('questionText').style.whiteSpace = 'pre-line';
+
+  document.getElementById('optionsContainer').innerHTML = q.options.map(opt => `
+    <div class="option-card bg-white rounded-lg border p-4 text-sm"
+      style="border-color:#e8e4dc;color:#3a3a3a;"
+      onclick="selectOption('${opt.key}', this)">
+      <span class="font-bold mr-2" style="color:#cc4444;">${opt.key}.</span>${opt.text}
+    </div>
+  `).join('');
+}
+
+function selectOption(key, el) {
+  document.querySelectorAll('.option-card').forEach(card => {
+    card.style.pointerEvents = 'none';
+  });
+  answers.push({ questionId: questions[currentQuestion].id, answer: key });
+  el.style.borderColor = '#cc4444';
+  el.style.background = '#fef5f5';
+  setTimeout(() => {
+    currentQuestion++;
+    renderQuestion();
+  }, 300);
+}
+
+// ============ 结果页 ============
+function renderResult() {
+  const c = selectedCigarette;
+  if (!c) return;
+
+  document.getElementById('resultName').textContent = c.name;
+  document.getElementById('resultMeta').textContent = `¥${c.price} · ${c.factory}`;
+  document.getElementById('resultTag').textContent = c.tag;
+  document.getElementById('resultDesc').textContent = c.description || '评价文案加载中...';
+  document.getElementById('resultPunchline').textContent = c.punchline || '';
+
+  document.getElementById('resultTraits').innerHTML = `
+    <div class="text-center flex-1">
+      <div class="text-xs mb-1" style="color:#b0a89a;">📚 学术</div>
+      <div class="text-xs" style="color:#3a3a3a;">${c.traits.academic}</div>
+    </div>
+    <div class="text-center flex-1">
+      <div class="text-xs mb-1" style="color:#b0a89a;">🗣 社交</div>
+      <div class="text-xs" style="color:#3a3a3a;">${c.traits.social}</div>
+    </div>
+    <div class="text-center flex-1">
+      <div class="text-xs mb-1" style="color:#b0a89a;">💔 感情</div>
+      <div class="text-xs" style="color:#3a3a3a;">${c.traits.romance}</div>
+    </div>
+  `;
+
+  renderPixelArt(c);
+}
+
+function renderPixelArt(cig) {
+  const box = document.getElementById('pixelArtBox');
+  const grid = cig.pixelGrid;
+  if (!grid || !grid.length) {
+    box.innerHTML = '<div class="text-5xl">🚬</div>';
+    return;
+  }
+
+  const pixelSize = 2;
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const displayScale = 3;
+
+  let shadows = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (grid[y][x] !== null) {
+        shadows.push(`${x * pixelSize}px ${y * pixelSize}px 0 ${grid[y][x]}`);
+      }
+    }
+  }
+
+  box.innerHTML = `
+    <div style="
+      width:${pixelSize}px;height:${pixelSize}px;
+      box-shadow:${shadows.join(',')};
+      margin:8px;
+      transform:scale(${displayScale});
+      transform-origin:top center;
+    "></div>
+    <div style="height:${rows * pixelSize * displayScale - rows * pixelSize}px;"></div>
+  `;
+}
+
+// ============ 步骤切换 ============
+let isTransitioning = false;
+
+function goToStep(stepName) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  const steps = document.querySelectorAll('.step');
+
+  steps.forEach(el => {
+    if (el.id === `step-${stepName}`) {
+      el.classList.remove('hidden');
+      el.offsetHeight;
+      el.style.opacity = '1';
+    } else {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        if (el.style.opacity === '0') {
+          el.classList.add('hidden');
+        }
+      }, 300);
+    }
+  });
+
+  if (stepName === 'question') {
+    if (!selectedCigarette) return;
+    currentQuestion = 0;
+    answers = [];
+    setTimeout(() => {
+      renderQuestion();
+      isTransitioning = false;
+    }, 350);
+  } else if (stepName === 'result') {
+    setTimeout(() => {
+      renderResult();
+      isTransitioning = false;
+    }, 350);
+  } else {
+    setTimeout(() => { isTransitioning = false; }, 350);
+  }
+}
+
+function restart() {
+  selectedCigarette = null;
+  currentQuestion = 0;
+  answers = [];
+  currentPriceFilter = 'all';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('.cig-card').forEach(c => {
+    c.style.borderColor = '#e8e4dc';
+    c.style.background = '#fff';
+  });
+  document.querySelectorAll('.price-tag').forEach(tag => {
+    const isActive = tag.dataset.price === 'all';
+    tag.style.borderColor = isActive ? '#cc4444' : '#e8e4dc';
+    tag.style.color = isActive ? '#cc4444' : '#999';
+    tag.style.background = isActive ? '#fef5f5' : '#fff';
+  });
+  renderCigarettes();
+  goToStep('select');
+}
+
+// ============ 图片保存 ============
+async function saveCard() {
+  if (!selectedCigarette) return;
+  const btn = document.getElementById('saveBtn');
+  btn.innerHTML = '⏳ 生成中...';
+  btn.disabled = true;
+
+  try {
+    const card = document.getElementById('resultCard');
+    const canvas = await html2canvas(card, {
+      backgroundColor: '#faf8f5',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    const link = document.createElement('a');
+    link.download = `香烟性格测试_${selectedCigarette.shortName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    btn.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
+  } catch (err) {
+    console.error('保存失败:', err);
+    alert('保存失败，请长按截图保存');
+    btn.innerHTML = '<i class="fa fa-download mr-1"></i> 保存卡片';
+  }
+  btn.disabled = false;
+  setTimeout(() => {
+    if (btn.innerHTML.includes('已保存')) {
+      btn.innerHTML = '<i class="fa fa-download mr-1"></i> 保存卡片';
+    }
+  }, 3000);
+}
+
+// ============ 初始化 ============
+renderCigarettes();
+</script>
+</body>
+</html>
